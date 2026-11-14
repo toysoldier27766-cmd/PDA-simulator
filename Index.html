@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#2d3033" />
+  <title>PocketPDA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --chassis: #2d3033;
+      --bezel: #1b1d1f;
+      --screen-bg: #9ead86;
+      --screen-dim: #879670;
+      --ink: #1b2214;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      background: #141517;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100dvh;
+      font-family: 'VT323', monospace;
+      color: var(--ink);
+    }
+
+    .pda-shell {
+      width: 100%;
+      max-width: 440px;
+      height: 100dvh;
+      background: var(--chassis);
+      display: flex;
+      flex-direction: column;
+      padding: 12px 12px 16px;
+      border-left: 2px solid #45494d;
+      border-right: 2px solid #1e2022;
+    }
+
+    .brand-bar {
+      color: #a9b0b8;
+      font-size: 1.1rem;
+      letter-spacing: 2px;
+      display: flex;
+      justify-content: space-between;
+      padding: 0 4px 6px;
+    }
+
+    .lcd-screen {
+      flex: 1;
+      background: var(--screen-bg);
+      border: 4px solid var(--bezel);
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.25);
+    }
+
+    .status-bar {
+      background: var(--ink);
+      color: var(--screen-bg);
+      padding: 4px 8px;
+      font-size: 1.2rem;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .view {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      padding: 10px;
+      overflow-y: auto;
+    }
+
+    .view.active {
+      display: flex;
+    }
+
+    /* Calendar / Datebook */
+    .cal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 1.5rem;
+      border-bottom: 2px solid var(--ink);
+      padding-bottom: 4px;
+      margin-bottom: 6px;
+    }
+
+    .btn-mini {
+      background: var(--screen-dim);
+      border: 2px solid var(--ink);
+      color: var(--ink);
+      font-family: inherit;
+      font-size: 1.2rem;
+      padding: 2px 10px;
+      cursor: pointer;
+    }
+
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 3px;
+      text-align: center;
+      font-size: 1.25rem;
+    }
+
+    .cal-day-name {
+      font-weight: bold;
+      border-bottom: 1px solid var(--ink);
+    }
+
+    .cal-cell {
+      padding: 6px 0;
+      border: 1px solid transparent;
+      cursor: pointer;
+    }
+
+    .cal-cell.selected {
+      background: var(--ink);
+      color: var(--screen-bg);
+    }
+
+    .cal-cell.has-note {
+      border: 1px dashed var(--ink);
+    }
+
+    .event-box {
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      gap: 6px;
+    }
+
+    .event-box label {
+      font-size: 1.2rem;
+    }
+
+    textarea {
+      flex: 1;
+      width: 100%;
+      background: transparent;
+      border: 2px solid var(--ink);
+      color: var(--ink);
+      font-family: 'VT323', monospace;
+      font-size: 1.3rem;
+      padding: 8px;
+      resize: none;
+      outline: none;
+      user-select: text;
+    }
+
+    /* Calculator */
+    .calc-display {
+      border: 2px solid var(--ink);
+      background: var(--screen-dim);
+      padding: 10px;
+      font-size: 2.4rem;
+      text-align: right;
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+
+    .calc-keys {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      flex: 1;
+    }
+
+    .calc-keys button {
+      background: var(--screen-dim);
+      border: 2px solid var(--ink);
+      color: var(--ink);
+      font-family: inherit;
+      font-size: 1.8rem;
+      cursor: pointer;
+    }
+
+    .calc-keys button:active {
+      background: var(--ink);
+      color: var(--screen-bg);
+    }
+
+    /* Bottom Silkscreen Dock */
+    .silkscreen-dock {
+      margin-top: 10px;
+      background: var(--screen-dim);
+      border: 3px solid var(--bezel);
+      border-radius: 6px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      padding: 6px;
+    }
+
+    .dock-btn {
+      background: transparent;
+      border: 2px solid var(--ink);
+      color: var(--ink);
+      font-family: inherit;
+      font-size: 1.15rem;
+      padding: 8px 2px;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .dock-btn.active {
+      background: var(--ink);
+      color: var(--screen-bg);
+    }
+  </style>
+</head>
+<body>
+  <div class="pda-shell">
+    <div class="brand-bar">
+      <span>POCKET-PDA 3000</span>
+      <span>PILOT OS</span>
+    </div>
+
+    <div class="lcd-screen">
+      <div class="status-bar">
+        <span id="appTitle">DATEBOOK</span>
+        <span id="clock">12:00 PM</span>
+        <span>BAT [||||]</span>
+      </div>
+
+      <!-- DATEBOOK -->
+      <div id="view-date" class="view active">
+        <div class="cal-header">
+          <button class="btn-mini" onclick="changeMonth(-1)">&lt;</button>
+          <span id="monthLabel">November 2026</span>
+          <button class="btn-mini" onclick="changeMonth(1)">&gt;</button>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+        <div class="event-box">
+          <label id="selectedDateLabel">Schedule for today:</label>
+          <textarea id="dayNote" placeholder="Tap to type events or tasks..."></textarea>
+        </div>
+      </div>
+
+      <!-- CALCULATOR -->
+      <div id="view-calc" class="view">
+        <div class="calc-display" id="calcDisplay">0</div>
+        <div class="calc-keys">
+          <button onclick="pressNum('7')">7</button>
+          <button onclick="pressNum('8')">8</button>
+          <button onclick="pressNum('9')">9</button>
+          <button onclick="pressOp('/')">/</button>
+          <button onclick="pressNum('4')">4</button>
+          <button onclick="pressNum('5')">5</button>
+          <button onclick="pressNum('6')">6</button>
+          <button onclick="pressOp('*')">*</button>
+          <button onclick="pressNum('1')">1</button>
+          <button onclick="pressNum('2')">2</button>
+          <button onclick="pressNum('3')">3</button>
+          <button onclick="pressOp('-')">-</button>
+          <button onclick="clearCalc()">C</button>
+          <button onclick="pressNum('0')">0</button>
+          <button onclick="calcEquals()">=</button>
+          <button onclick="pressOp('+')">+</button>
+        </div>
+      </div>
+
+      <!-- MEMO PAD -->
+      <div id="view-memo" class="view">
+        <label style="font-size:1.2rem; margin-bottom:6px;">MEMO PAD (AUTO-SAVES)</label>
+        <textarea id="memoPad" placeholder="Write quick notes, lists, or reminders..."></textarea>
+      </div>
+    </div>
+
+    <div class="silkscreen-dock">
+      <button class="dock-btn active" id="btn-date" onclick="switchView('date', 'DATEBOOK')">DATE</button>
+      <button class="dock-btn" id="btn-calc" onclick="switchView('calc', 'CALCULATOR')">CALC</button>
+      <button class="dock-btn" id="btn-memo" onclick="switchView('memo', 'MEMO PAD')">MEMO</button>
+      <button class="dock-btn" onclick="cycleTheme()">LCD</button>
+    </div>
+  </div>
+
+  <script>
+    // Live Clock
+    function updateClock() {
+      const now = new Date();
+      document.getElementById('clock').textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Navigation
+    function switchView(viewId, title) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.querySelectorAll('.dock-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('view-' + viewId).classList.add('active');
+      document.getElementById('btn-' + viewId).classList.add('active');
+      document.getElementById('appTitle').textContent = title;
+    }
+
+    // Theme Switcher
+    const themes = [
+      { bg: '#9ead86', dim: '#879670', ink: '#1b2214' }, // Classic Green LCD
+      { bg: '#c5c8be', dim: '#aeb2a7', ink: '#1e201d' }, // Monochrome Gray LCD
+      { bg: '#1a1205', dim: '#2b1e08', ink: '#ffb000' }  // Amber Phosphor
+    ];
+    let themeIdx = 0;
+    function cycleTheme() {
+      themeIdx = (themeIdx + 1) % themes.length;
+      const root = document.documentElement.style;
+      root.setProperty('--screen-bg', themes[themeIdx].bg);
+      root.setProperty('--screen-dim', themes[themeIdx].dim);
+      root.setProperty('--ink', themes[themeIdx].ink);
+    }
+
+    // Calendar & Daily Notes
+    let currentMonth = new Date();
+    let selectedKey = new Date().toISOString().split('T')[0];
+    let events = JSON.parse(localStorage.getItem('pda_events') || '{}');
+
+    function renderCalendar() {
+      const year = currentMonth.getFullYear();
+      const month = currentMonth.getMonth();
+      document.getElementById('monthLabel').textContent =
+        currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' });
+
+      const grid = document.getElementById('calGrid');
+      grid.innerHTML = '';
+      ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].forEach(d => {
+        const el = document.createElement('div');
+        el.className = 'cal-day-name';
+        el.textContent = d;
+        grid.appendChild(el);
+      });
+
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      for (let i = 0; i < firstDay; i++) {
+        grid.appendChild(document.createElement('div'));
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const key = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const cell = document.createElement('div');
+        cell.className = 'cal-cell';
+        if (key === selectedKey) cell.classList.add('selected');
+        if (events[key]) cell.classList.add('has-note');
+        cell.textContent = day;
+        cell.onclick = () => selectDate(key);
+        grid.appendChild(cell);
+      }
+      loadSelectedNote();
+    }
+
+    function selectDate(key) {
+      selectedKey = key;
+      renderCalendar();
+    }
+
+    function changeMonth(delta) {
+      currentMonth.setMonth(currentMonth.getMonth() + delta);
+      renderCalendar();
+    }
+
+    function loadSelectedNote() {
+      document.getElementById('selectedDateLabel').textContent = `Events for ${selectedKey}:`;
+      document.getElementById('dayNote').value = events[selectedKey] || '';
+    }
+
+    document.getElementById('dayNote').addEventListener('input', (e) => {
+      const val = e.target.value.trim();
+      if (val) events[selectedKey] = e.target.value;
+      else delete events[selectedKey];
+      localStorage.setItem('pda_events', JSON.stringify(events));
+      renderCalendar();
+    });
+
+    renderCalendar();
+
+    // Memo Pad
+    const memoPad = document.getElementById('memoPad');
+    memoPad.value = localStorage.getItem('pda_memo') || '';
+    memoPad.addEventListener('input', () => {
+      localStorage.setItem('pda_memo', memoPad.value);
+    });
+
+    // Calculator
+    let calcVal = '0', prevVal = null, op = null, resetNext = false;
+    function updateCalc() {
+      document.getElementById('calcDisplay').textContent = calcVal;
+    }
+    function pressNum(n) {
+      if (resetNext || calcVal === '0') { calcVal = n; resetNext = false; }
+      else if (calcVal.length < 12) { calcVal += n; }
+      updateCalc();
+    }
+    function pressOp(nextOp) {
+      if (op && !resetNext) calcEquals();
+      prevVal = parseFloat(calcVal);
+      op = nextOp;
+      resetNext = true;
+    }
+    function calcEquals() {
+      if (!op || prevVal === null) return;
+      const cur = parseFloat(calcVal);
+      let res = 0;
+      if (op === '+') res = prevVal + cur;
+      if (op === '-') res = prevVal - cur;
+      if (op === '*') res = prevVal * cur;
+      if (op === '/') res = cur === 0 ? 'ERR' : prevVal / cur;
+      calcVal = String(res).slice(0, 12);
+      op = null; prevVal = null; resetNext = true;
+      updateCalc();
+    }
+    function clearCalc() {
+      calcVal = '0'; prevVal = null; op = null; resetNext = false;
+      updateCalc();
+    }
+  </script>
+</body>
+</html>
