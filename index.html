@@ -103,9 +103,16 @@
       border: 2px solid var(--ink);
       color: var(--ink);
       font-family: inherit;
-      font-size: 1.2rem;
-      padding: 2px 10px;
+      font-size: 1.15rem;
+      padding: 2px 8px;
       cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-mini:active {
+      background: var(--ink);
+      color: var(--screen-bg);
     }
 
     .cal-grid {
@@ -148,8 +155,7 @@
       font-size: 1.2rem;
     }
 
-    textarea {
-      flex: 1;
+    textarea, input {
       width: 100%;
       background: transparent;
       border: 2px solid var(--ink);
@@ -157,9 +163,13 @@
       font-family: 'VT323', monospace;
       font-size: 1.3rem;
       padding: 8px;
-      resize: none;
       outline: none;
       user-select: text;
+    }
+
+    textarea {
+      flex: 1;
+      resize: none;
     }
 
     /* Calculator */
@@ -194,6 +204,61 @@
       color: var(--screen-bg);
     }
 
+    /* Gemini Terminal */
+    .ai-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid var(--ink);
+      padding-bottom: 6px;
+      margin-bottom: 8px;
+      gap: 6px;
+    }
+
+    .ai-login-box {
+      border: 2px solid var(--ink);
+      background: var(--screen-dim);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin: auto 0;
+      font-size: 1.25rem;
+    }
+
+    .ai-chat-wrap {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+      gap: 6px;
+    }
+
+    .ai-log {
+      flex: 1;
+      border: 2px solid var(--ink);
+      padding: 8px;
+      overflow-y: auto;
+      font-size: 1.25rem;
+      line-height: 1.25;
+      white-space: pre-wrap;
+      user-select: text;
+    }
+
+    .ai-msg {
+      margin-bottom: 8px;
+    }
+
+    .ai-input-row {
+      display: flex;
+      gap: 6px;
+    }
+
+    .ai-input-row input {
+      flex: 1;
+      padding: 6px 8px;
+    }
+
     /* Bottom Silkscreen Dock */
     .silkscreen-dock {
       margin-top: 10px;
@@ -201,7 +266,7 @@
       border: 3px solid var(--bezel);
       border-radius: 6px;
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       gap: 4px;
       padding: 6px;
     }
@@ -211,7 +276,7 @@
       border: 2px solid var(--ink);
       color: var(--ink);
       font-family: inherit;
-      font-size: 1.15rem;
+      font-size: 1.05rem;
       padding: 8px 2px;
       text-align: center;
       cursor: pointer;
@@ -279,12 +344,41 @@
         <label style="font-size:1.2rem; margin-bottom:6px;">MEMO PAD (AUTO-SAVES)</label>
         <textarea id="memoPad" placeholder="Write quick notes, lists, or reminders..."></textarea>
       </div>
+
+      <!-- GEMINI TERMINAL -->
+      <div id="view-ai" class="view">
+        <div class="ai-toolbar">
+          <a class="btn-mini" href="https://gemini.google.com" target="_blank" rel="noopener">OPEN GEMINI APP ↗</a>
+          <button class="btn-mini" id="keyToggleBtn" onclick="toggleKeyBox()">KEY</button>
+        </div>
+
+        <div id="ai-login" class="ai-login-box">
+          <div><strong>GEMINI TERMINAL LOGIN</strong></div>
+          <div>Paste a free API key from <u>aistudio.google.com</u> to chat right inside your PDA:</div>
+          <input type="password" id="apiKeyInput" placeholder="Paste key (AIza...)" />
+          <div style="display:flex; gap:6px;">
+            <button class="btn-mini" style="flex:1;" onclick="saveApiKey()">CONNECT</button>
+            <button class="btn-mini" onclick="clearApiKey()">LOGOUT</button>
+          </div>
+        </div>
+
+        <div id="ai-chat" class="ai-chat-wrap" style="display:none;">
+          <div class="ai-log" id="aiLog">
+            <div class="ai-msg">SYS&gt; GEMINI LINK READY. ASK ANYTHING.</div>
+          </div>
+          <div class="ai-input-row">
+            <input type="text" id="aiInput" placeholder="Message Gemini..." onkeydown="if(event.key==='Enter') sendToGemini()" />
+            <button class="btn-mini" onclick="sendToGemini()">SEND</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="silkscreen-dock">
       <button class="dock-btn active" id="btn-date" onclick="switchView('date', 'DATEBOOK')">DATE</button>
       <button class="dock-btn" id="btn-calc" onclick="switchView('calc', 'CALCULATOR')">CALC</button>
       <button class="dock-btn" id="btn-memo" onclick="switchView('memo', 'MEMO PAD')">MEMO</button>
+      <button class="dock-btn" id="btn-ai" onclick="switchView('ai', 'GEMINI LINK')">AI</button>
       <button class="dock-btn" onclick="cycleTheme()">LCD</button>
     </div>
   </div>
@@ -309,9 +403,9 @@
 
     // Theme Switcher
     const themes = [
-      { bg: '#9ead86', dim: '#879670', ink: '#1b2214' }, // Classic Green LCD
-      { bg: '#c5c8be', dim: '#aeb2a7', ink: '#1e201d' }, // Monochrome Gray LCD
-      { bg: '#1a1205', dim: '#2b1e08', ink: '#ffb000' }  // Amber Phosphor
+      { bg: '#9ead86', dim: '#879670', ink: '#1b2214' },
+      { bg: '#c5c8be', dim: '#aeb2a7', ink: '#1e201d' },
+      { bg: '#1a1205', dim: '#2b1e08', ink: '#ffb000' }
     ];
     let themeIdx = 0;
     function cycleTheme() {
@@ -351,6 +445,167 @@
 
       for (let day = 1; day <= daysInMonth; day++) {
         const key = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const cell = document.createElement('div');
+        cell.className = 'cal-cell';
+        if (key === selectedKey) cell.classList.add('selected');
+        if (events[key]) cell.classList.add('has-note');
+        cell.textContent = day;
+        cell.onclick = () => selectDate(key);
+        grid.appendChild(cell);
+      }
+      loadSelectedNote();
+    }
+
+    function selectDate(key) {
+      selectedKey = key;
+      renderCalendar();
+    }
+
+    function changeMonth(delta) {
+      currentMonth.setMonth(currentMonth.getMonth() + delta);
+      renderCalendar();
+    }
+
+    function loadSelectedNote() {
+      document.getElementById('selectedDateLabel').textContent = `Events for ${selectedKey}:`;
+      document.getElementById('dayNote').value = events[selectedKey] || '';
+    }
+
+    document.getElementById('dayNote').addEventListener('input', (e) => {
+      const val = e.target.value.trim();
+      if (val) events[selectedKey] = e.target.value;
+      else delete events[selectedKey];
+      localStorage.setItem('pda_events', JSON.stringify(events));
+      renderCalendar();
+    });
+
+    renderCalendar();
+
+    // Memo Pad
+    const memoPad = document.getElementById('memoPad');
+    memoPad.value = localStorage.getItem('pda_memo') || '';
+    memoPad.addEventListener('input', () => {
+      localStorage.setItem('pda_memo', memoPad.value);
+    });
+
+    // Calculator
+    let calcVal = '0', prevVal = null, op = null, resetNext = false;
+    function updateCalc() {
+      document.getElementById('calcDisplay').textContent = calcVal;
+    }
+    function pressNum(n) {
+      if (resetNext || calcVal === '0') { calcVal = n; resetNext = false; }
+      else if (calcVal.length < 12) { calcVal += n; }
+      updateCalc();
+    }
+    function pressOp(nextOp) {
+      if (op && !resetNext) calcEquals();
+      prevVal = parseFloat(calcVal);
+      op = nextOp;
+      resetNext = true;
+    }
+    function calcEquals() {
+      if (!op || prevVal === null) return;
+      const cur = parseFloat(calcVal);
+      let res = 0;
+      if (op === '+') res = prevVal + cur;
+      if (op === '-') res = prevVal - cur;
+      if (op === '*') res = prevVal * cur;
+      if (op === '/') res = cur === 0 ? 'ERR' : prevVal / cur;
+      calcVal = String(res).slice(0, 12);
+      op = null; prevVal = null; resetNext = true;
+      updateCalc();
+    }
+    function clearCalc() {
+      calcVal = '0'; prevVal = null; op = null; resetNext = false;
+      updateCalc();
+    }
+
+    // Gemini Terminal
+    function initAiView() {
+      const savedKey = localStorage.getItem('pda_gemini_key');
+      document.getElementById('ai-login').style.display = savedKey ? 'none' : 'flex';
+      document.getElementById('ai-chat').style.display = savedKey ? 'flex' : 'none';
+    }
+
+    function toggleKeyBox() {
+      const loginBox = document.getElementById('ai-login');
+      const chatBox = document.getElementById('ai-chat');
+      const showingLogin = loginBox.style.display !== 'none';
+      if (showingLogin && localStorage.getItem('pda_gemini_key')) {
+        loginBox.style.display = 'none';
+        chatBox.style.display = 'flex';
+      } else {
+        loginBox.style.display = 'flex';
+        chatBox.style.display = 'none';
+      }
+    }
+
+    function saveApiKey() {
+      const key = document.getElementById('apiKeyInput').value.trim();
+      if (!key) return;
+      localStorage.setItem('pda_gemini_key', key);
+      document.getElementById('apiKeyInput').value = '';
+      initAiView();
+    }
+
+    function clearApiKey() {
+      localStorage.removeItem('pda_gemini_key');
+      document.getElementById('apiKeyInput').value = '';
+      initAiView();
+    }
+
+    function appendAiMsg(prefix, text) {
+      const log = document.getElementById('aiLog');
+      const div = document.createElement('div');
+      div.className = 'ai-msg';
+      div.textContent = `${prefix}> ${text}`;
+      log.appendChild(div);
+      log.scrollTop = log.scrollHeight;
+      return div;
+    }
+
+    async function sendToGemini() {
+      const input = document.getElementById('aiInput');
+      const prompt = input.value.trim();
+      const apiKey = localStorage.getItem('pda_gemini_key');
+      if (!prompt || !apiKey) return;
+
+      input.value = '';
+      appendAiMsg('YOU', prompt);
+      const pending = appendAiMsg('GEM', 'THINKING...');
+
+      try {
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              systemInstruction: {
+                parts: [{ text: 'You are built into a retro 1999 pocket PDA. Keep replies concise, helpful, and plain text without markdown formatting.' }]
+              },
+              contents: [{ role: 'user', parts: [{ text: prompt }] }]
+            })
+          }
+        );
+        const data = await res.json();
+        if (!res.ok) {
+          pending.textContent = `ERR> ${data.error?.message || 'CHECK API KEY'}`;
+          return;
+        }
+        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || 'NO RESPONSE';
+        pending.textContent = `GEM> ${reply.trim()}`;
+      } catch (err) {
+        pending.textContent = 'ERR> NETWORK CONNECTION FAILED';
+      }
+    }
+
+    initAiView();
+  </script>
+</body>
+</html>
+padStart(2, '0')}`;
         const cell = document.createElement('div');
         cell.className = 'cal-cell';
         if (key === selectedKey) cell.classList.add('selected');
